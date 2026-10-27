@@ -1,0 +1,30 @@
+{
+  "name": "homebase",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Homebase — lights that follow you: Govee lights, an Android TV and an Android phone, run from a Mac (React + .NET 10 + SQLite), built with GitHub Copilot.",
+  "type": "module",
+  "engines": {
+    "node": ">=22.22.0"
+  },
+  "workspaces": [
+    "frontend"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace frontend",
+    "build": "npm run build --workspace frontend",
+    "start": "node scripts/start.mjs",
+    "gen:api": "npm run gen:api --workspace frontend",
+    "verify": "node scripts/verify.mjs",
+    "codemap": "node scripts/codemap.mjs",
+    "contract:check": "node scripts/check-api-contract.mjs",
+    "lint:ai": "node scripts/lint-ai-config.mjs",
+    "test:scripts": "node --test \"scripts/**/*.test.mjs\"",
+    "mac:install": "node scripts/macos-service.mjs install",
+    "mac:status": "node scripts/macos-service.mjs status",
+    "mac:uninstall": "node scripts/macos-service.mjs uninstall"
+  },
+  "devDependencies": {
+    "yaml": "2.9.1"
+  }
+}

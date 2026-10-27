@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Shared test support: in-memory repositories, a fake TV and the test household (mirrors database/migrations/0002_seed_household.sql). -->
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Homebase.Application\Homebase.Application.csproj" />
+  </ItemGroup>
+</Project>

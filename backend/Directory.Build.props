@@ -1,0 +1,14 @@
+<Project>
+  <!-- Applies to every project under backend/. Everything targets .NET 10 and runs on the Mac (docs/adr/0006). -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <Deterministic>true</Deterministic>
+    <Features>strict</Features>
+    <!-- Audit transitive packages too, not only direct references. -->
+    <NuGetAudit>true</NuGetAudit>
+    <NuGetAuditMode>all</NuGetAuditMode>
+  </PropertyGroup>
+</Project>

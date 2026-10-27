@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Controllers, DTOs and mapping only. Hosting (URLs, data folder, static files) is Homebase.Api.Host's job. -->
+  <PropertyGroup>
+    <RootNamespace>Homebase.Api</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Homebase.Application\Homebase.Application.csproj" />
+  </ItemGroup>
+</Project>

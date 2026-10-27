@@ -1,0 +1,20 @@
+# Every pull request — including ones opened by Copilot cloud agent — needs a review from the maintainer.
+# The explicit lines below are the paths that must never merge on autopilot; add co-maintainers there first.
+*                                                   @aarongeo1
+
+# Higher risk: the phone's report token, hardware drivers, the rules that decide what the lights do, and the data.
+/backend/src/Homebase.Api/Infrastructure/           @aarongeo1
+/backend/src/Homebase.Devices/                      @aarongeo1
+/backend/src/Homebase.Domain/                       @aarongeo1
+/backend/src/Homebase.Application/                  @aarongeo1
+/database/                                          @aarongeo1
+/contracts/                                         @aarongeo1
+
+# The rules and guardrails agents work under. Agents must never be the only reviewers of their own constraints.
+/.github/copilot-instructions.md                    @aarongeo1
+/AGENTS.md                                          @aarongeo1
+/.github/instructions/                              @aarongeo1
+/.github/agents/                                    @aarongeo1
+/.github/hooks/                                     @aarongeo1
+/.github/ai-models.json                             @aarongeo1
+/scripts/hooks/                                     @aarongeo1

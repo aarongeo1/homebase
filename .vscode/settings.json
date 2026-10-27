@@ -1,0 +1,18 @@
+{
+  "chat.useAgentsMdFile": true,
+  "chat.includeApplyingInstructions": true,
+  "chat.includeReferencedInstructions": true,
+  "github.copilot.chat.codeGeneration.useInstructionFiles": true,
+  "github.copilot.chat.organizationInstructions.enabled": true,
+  "chat.useHooks": true,
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/bin": true,
+    "**/obj": true,
+    "**/dist": true,
+    "frontend/src/shared/api/generated": true,
+    "package-lock.json": true
+  },
+  "files.associations": { "*.instructions.md": "markdown", "*.agent.md": "markdown", "*.prompt.md": "markdown" },
+  "typescript.tsdk": "node_modules/typescript/lib"
+}

@@ -1,0 +1,614 @@
+openapi: 3.0.3
+info:
+  title: Homebase API
+  version: 2.0.0
+  description: |
+    The contract between the React frontend and the .NET 10 backend that runs on the Mac.
+
+    THIS FILE IS THE SOURCE OF TRUTH.
+    - Frontend types are generated from it (`npm run gen:api`); an endpoint that is
+      not declared here does not compile in the frontend.
+    - `npm run contract:check` fails if an ASP.NET Core controller route and this file disagree.
+    - Change it with the `change-api-contract` skill (.github/skills/change-api-contract).
+
+    Conventions: JSON is camelCase. Timestamps are ISO-8601 UTC ending in `Z`; clock
+    times such as "06:45" are household-local (HOMEBASE_TIMEZONE, default: the Mac's
+    time zone). Business rules (automations, presence, darkness) run on the server;
+    the frontend renders what it receives.
+servers:
+  - url: http://localhost:5080
+    description: The Mac (backend/src/Homebase.Api.Host), which also serves the built frontend.
+tags:
+  - name: devices
+  - name: automations
+  - name: presence
+  - name: platform
+
+paths:
+  /api/health:
+    get:
+      tags: [platform]
+      operationId: getHealth
+      responses:
+        "200":
+          description: Service is up.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Health" }
+
+  /api/presence:
+    get:
+      tags: [presence]
+      operationId: getPresence
+      summary: Home or away, whether it is dark, and the phone-report token (only when asked from the Mac itself).
+      responses:
+        "200":
+          description: The household's presence picture right now.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Presence" }
+
+  /api/rooms:
+    get:
+      tags: [devices]
+      operationId: listRooms
+      responses:
+        "200":
+          description: Rooms ordered by sort order.
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/Room" } }
+
+  /api/devices:
+    get:
+      tags: [devices]
+      operationId: listDevices
+      parameters:
+        - { name: roomId, in: query, required: false, schema: { type: string } }
+      responses:
+        "200":
+          description: Devices ordered by room (devices without a room last), then name. Includes the TV and phone (read-only here).
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/Device" } }
+
+  /api/devices/discover:
+    post:
+      tags: [devices]
+      operationId: discoverDevices
+      summary: Look for Govee lights (local network, then Govee cloud if an API key is set) and add new ones without a room.
+      responses:
+        "200":
+          description: What was found. Running it again never duplicates a light.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Discovery" }
+
+  /api/devices/{deviceId}:
+    get:
+      tags: [devices]
+      operationId: getDevice
+      parameters:
+        - { name: deviceId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: The device.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Device" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: [devices]
+      operationId: updateDevice
+      summary: Rename a device or move it to a room (roomId null = no room).
+      parameters:
+        - { name: deviceId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DeviceSettings" }
+      responses:
+        "200":
+          description: The updated device.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Device" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/Unprocessable" }
+
+  /api/devices/{deviceId}/commands:
+    post:
+      tags: [devices]
+      operationId: commandDevice
+      summary: Change a light. The TV and phone are read-only (422 read_only_device).
+      parameters:
+        - { name: deviceId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DeviceCommand" }
+      responses:
+        "200":
+          description: The device after the command was applied.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Device" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/Unprocessable" }
+
+  /api/devices/{deviceId}/report:
+    post:
+      tags: [presence]
+      operationId: reportDeviceState
+      summary: The phone's automation app reports what changed (home, charging, asleep). Only push devices accept reports (else 422 not_reportable).
+      security:
+        - reportToken: []
+      parameters:
+        - { name: deviceId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DeviceReport" }
+      responses:
+        "200":
+          description: The device after the report. Automations it triggers have already run.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Device" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/Unprocessable" }
+
+  /api/devices/{deviceId}/pairing:
+    post:
+      tags: [devices]
+      operationId: startPairing
+      summary: Ask the TV to show a pairing code. Only android-tv devices pair (else 422 not_pairable).
+      parameters:
+        - { name: deviceId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PairingRequest" }
+      responses:
+        "200":
+          description: The TV is showing a code; send it to /pairing/confirm.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Pairing" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/Unprocessable" }
+
+  /api/devices/{deviceId}/pairing/confirm:
+    post:
+      tags: [devices]
+      operationId: confirmPairing
+      summary: Finish pairing with the code the TV shows. A wrong code fails with 422 pairing_failed.
+      parameters:
+        - { name: deviceId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PairingCode" }
+      responses:
+        "200":
+          description: The paired TV.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Device" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/Unprocessable" }
+
+  /api/scenes:
+    get:
+      tags: [automations]
+      operationId: listScenes
+      responses:
+        "200":
+          description: All scenes.
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/Scene" } }
+
+  /api/scenes/{sceneId}/activate:
+    post:
+      tags: [automations]
+      operationId: activateScene
+      parameters:
+        - { name: sceneId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Per-action results. One failing light does not stop the others.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SceneActivation" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /api/automations:
+    get:
+      tags: [automations]
+      operationId: listAutomations
+      responses:
+        "200":
+          description: All automations ordered by name.
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/Automation" } }
+
+  /api/automations/runs:
+    get:
+      tags: [automations]
+      operationId: listAutomationRuns
+      parameters:
+        - { name: limit, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 200, default: 50 } }
+      responses:
+        "200":
+          description: Most recent runs first.
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/AutomationRun" } }
+        "422": { $ref: "#/components/responses/Unprocessable" }
+
+  /api/automations/{automationId}:
+    get:
+      tags: [automations]
+      operationId: getAutomation
+      parameters:
+        - { name: automationId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: The automation.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Automation" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /api/automations/{automationId}/enabled:
+    put:
+      tags: [automations]
+      operationId: setAutomationEnabled
+      parameters:
+        - { name: automationId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [enabled]
+              properties:
+                enabled: { type: boolean }
+      responses:
+        "200":
+          description: The updated automation. Disabling it cancels a waiting forMinutes trigger.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Automation" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /api/automations/{automationId}/simulate:
+    post:
+      tags: [automations]
+      operationId: simulateAutomation
+      summary: Dry-run the automation as if its trigger fired now (and held for forMinutes). Changes nothing; explains every decision.
+      parameters:
+        - { name: automationId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: What would happen and why.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Simulation" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+components:
+  securitySchemes:
+    reportToken:
+      type: http
+      scheme: bearer
+      description: The token shown on the Presence page when it is opened on the Mac (stored in the data folder as report-token.txt).
+
+  responses:
+    NotFound:
+      description: The resource does not exist.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ApiError" }
+    Unauthorized:
+      description: Missing or wrong report token (error code unauthorized).
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ApiError" }
+    Unprocessable:
+      description: The request was well-formed but violates a business rule.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ApiError" }
+
+  schemas:
+    ApiError:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              description: Stable machine-readable code, e.g. not_found, validation_failed, read_only_device, device_offline, unauthorized, not_reportable, not_pairable, pairing_failed.
+            message: { type: string }
+
+    Health:
+      type: object
+      required: [status, database]
+      properties:
+        status: { type: string, enum: [ok] }
+        database: { type: string, enum: [ok, unavailable] }
+
+    Sun:
+      type: object
+      required: [dark, sunrise, sunset, locationSet]
+      properties:
+        dark: { type: boolean, description: True between sunset and sunrise. }
+        sunrise: { type: string, nullable: true, description: Today's household-local HH:mm; null without a location or during polar day/night. }
+        sunset: { type: string, nullable: true }
+        locationSet:
+          type: boolean
+          description: False when HOMEBASE_LATITUDE/HOMEBASE_LONGITUDE are not set; "dark" then means 18:00–07:00.
+
+    Presence:
+      type: object
+      required: [home, phoneDeviceId, tvDeviceId, sun, reportToken]
+      properties:
+        home: { type: boolean, nullable: true, description: From the phone. Null until it has reported once. }
+        phoneDeviceId: { type: string, nullable: true }
+        tvDeviceId: { type: string, nullable: true }
+        sun: { $ref: "#/components/schemas/Sun" }
+        reportToken:
+          type: string
+          nullable: true
+          description: Only returned to requests from the Mac itself (loopback); null otherwise.
+
+    Room:
+      type: object
+      required: [id, name]
+      properties:
+        id: { type: string }
+        name: { type: string }
+
+    DeviceType:
+      type: string
+      enum: [light, tv, phone]
+
+    DeviceDriver:
+      type: string
+      enum: [simulated, govee-lan, govee-cloud, android-tv, push]
+      description: How Homebase talks to the device (see the add-device-driver skill). push = the device reports to us.
+
+    DeviceState:
+      type: object
+      description: |
+        Flat state bag. Which fields are present depends on the device type
+        (docs/GLOSSARY.md "Device capabilities"); absent fields are null.
+      properties:
+        on: { type: boolean, nullable: true }
+        brightness: { type: integer, minimum: 0, maximum: 100, nullable: true }
+        colorTempK: { type: integer, minimum: 2000, maximum: 9000, nullable: true }
+        home: { type: boolean, nullable: true }
+        charging: { type: boolean, nullable: true }
+        asleep: { type: boolean, nullable: true }
+
+    Device:
+      type: object
+      required: [id, name, roomId, type, driver, online, needsPairing, state, lastChangedAt]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        roomId: { type: string, nullable: true, description: Null for a newly found light that is not in a room yet. }
+        type: { $ref: "#/components/schemas/DeviceType" }
+        driver: { $ref: "#/components/schemas/DeviceDriver" }
+        online: { type: boolean }
+        needsPairing: { type: boolean, description: True for a TV that has not been paired yet. }
+        state: { $ref: "#/components/schemas/DeviceState" }
+        lastChangedAt: { type: string, format: date-time }
+
+    DeviceCommand:
+      type: object
+      description: Lights only. Fields a light does not support are rejected with 422 validation_failed.
+      properties:
+        on: { type: boolean }
+        brightness: { type: integer, minimum: 1, maximum: 100, description: Also turns the light on. }
+        colorTempK: { type: integer, minimum: 2000, maximum: 9000, description: White colour temperature; 2700 is warm, 6500 is daylight. }
+
+    DeviceSettings:
+      type: object
+      required: [name, roomId]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 100 }
+        roomId: { type: string, nullable: true }
+
+    DeviceReport:
+      type: object
+      description: At least one field. Only the fields the device type has are accepted.
+      properties:
+        home: { type: boolean }
+        charging: { type: boolean }
+        asleep: { type: boolean }
+
+    Discovery:
+      type: object
+      required: [added, updated, notes]
+      properties:
+        added: { type: array, items: { $ref: "#/components/schemas/Device" } }
+        updated:
+          type: array
+          description: Lights already known whose address or driver changed (e.g. a new IP from the router).
+          items: { $ref: "#/components/schemas/Device" }
+        notes:
+          type: array
+          description: Plain-English hints, e.g. why the cloud search was skipped.
+          items: { type: string }
+
+    PairingRequest:
+      type: object
+      properties:
+        address: { type: string, nullable: true, description: The TV's IP or host name. Optional when it is already known. }
+
+    Pairing:
+      type: object
+      required: [deviceId, message]
+      properties:
+        deviceId: { type: string }
+        message: { type: string }
+
+    PairingCode:
+      type: object
+      required: [code]
+      properties:
+        code: { type: string, pattern: "^[0-9A-Fa-f]{6}$" }
+
+    Action:
+      type: object
+      description: |
+        One step of a scene or automation. kind=device uses deviceId, kind=room uses
+        roomId (every light in the room), both with command fields; kind=scene uses sceneId.
+      required: [kind, summary]
+      properties:
+        kind: { type: string, enum: [device, room, scene] }
+        deviceId: { type: string, nullable: true }
+        roomId: { type: string, nullable: true }
+        sceneId: { type: string, nullable: true }
+        on: { type: boolean, nullable: true }
+        brightness: { type: integer, minimum: 1, maximum: 100, nullable: true }
+        colorTempK: { type: integer, minimum: 2000, maximum: 9000, nullable: true }
+        summary: { type: string, description: 'Server-written plain-English description, e.g. "Bedroom lights → on at 25%, 2200 K".' }
+
+    Scene:
+      type: object
+      required: [id, name, description, actions]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        description: { type: string }
+        actions: { type: array, items: { $ref: "#/components/schemas/Action" } }
+
+    SceneActivation:
+      type: object
+      required: [sceneId, results]
+      properties:
+        sceneId: { type: string }
+        results:
+          type: array
+          items:
+            type: object
+            required: [action, ok]
+            properties:
+              action: { $ref: "#/components/schemas/Action" }
+              ok: { type: boolean }
+              errorCode:
+                type: string
+                nullable: true
+                description: "Null when ok. Otherwise one of: device_offline, validation_failed, read_only_device, not_found, internal_error."
+
+    Weekday:
+      type: string
+      enum: [mon, tue, wed, thu, fri, sat, sun]
+
+    TriggerField:
+      type: string
+      enum: [on, home, charging, asleep]
+
+    Trigger:
+      type: object
+      description: |
+        kind=device fires when the device field changes to `equals` (and, with forMinutes,
+        only once it has stayed that way that long); kind=time fires at a household-local
+        HH:mm on the given days.
+      required: [kind, summary]
+      properties:
+        kind: { type: string, enum: [device, time] }
+        deviceId: { type: string, nullable: true }
+        field: { allOf: [{ $ref: "#/components/schemas/TriggerField" }], nullable: true }
+        equals: { type: boolean, nullable: true }
+        forMinutes: { type: integer, minimum: 1, maximum: 240, nullable: true }
+        at: { type: string, pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$", nullable: true }
+        days: { type: array, items: { $ref: "#/components/schemas/Weekday" }, nullable: true }
+        summary: { type: string }
+
+    Condition:
+      type: object
+      description: |
+        All conditions must pass. A time-window may wrap midnight (after 22:00, before 06:30).
+        kind=dark passes when the darkness matches `equals` (true = between sunset and sunrise).
+      required: [kind, summary]
+      properties:
+        kind: { type: string, enum: [time-window, device, dark] }
+        after: { type: string, nullable: true }
+        before: { type: string, nullable: true }
+        deviceId: { type: string, nullable: true }
+        field: { allOf: [{ $ref: "#/components/schemas/TriggerField" }], nullable: true }
+        equals: { type: boolean, nullable: true }
+        summary: { type: string }
+
+    RunOutcome:
+      type: string
+      enum: [executed, skipped, failed, cancelled]
+      description: skipped = a condition failed; cancelled = a forMinutes trigger stopped matching before the time was up.
+
+    Automation:
+      type: object
+      required: [id, name, description, enabled, trigger, conditions, actions, lastRunAt, lastOutcome, waitingUntil]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        description: { type: string }
+        enabled: { type: boolean }
+        trigger: { $ref: "#/components/schemas/Trigger" }
+        conditions: { type: array, items: { $ref: "#/components/schemas/Condition" } }
+        actions: { type: array, items: { $ref: "#/components/schemas/Action" } }
+        lastRunAt: { type: string, format: date-time, nullable: true }
+        lastOutcome: { allOf: [{ $ref: "#/components/schemas/RunOutcome" }], nullable: true }
+        waitingUntil:
+          type: string
+          format: date-time
+          nullable: true
+          description: Set while a forMinutes trigger is counting down; the automation fires then if the field still matches.
+
+    TraceStep:
+      type: object
+      required: [label, passed, detail]
+      properties:
+        label: { type: string, description: 'e.g. "Condition: it is dark".' }
+        passed: { type: boolean }
+        detail: { type: string, description: 'Why, with the observed values, e.g. "Sunset was 17:42; now is 23:12 (household time)".' }
+
+    Simulation:
+      type: object
+      required: [automationId, wouldRun, evaluatedAt, trace, plannedActions]
+      properties:
+        automationId: { type: string }
+        wouldRun: { type: boolean }
+        evaluatedAt: { type: string, format: date-time }
+        trace: { type: array, items: { $ref: "#/components/schemas/TraceStep" } }
+        plannedActions: { type: array, items: { $ref: "#/components/schemas/Action" } }
+
+    AutomationRun:
+      type: object
+      required: [id, automationId, automationName, firedAt, outcome, trace, actionsExecuted]
+      properties:
+        id: { type: string }
+        automationId: { type: string }
+        automationName: { type: string }
+        firedAt: { type: string, format: date-time }
+        outcome: { $ref: "#/components/schemas/RunOutcome" }
+        trace:
+          type: array
+          description: 'Failed actions appear here as failed steps, e.g. detail "Bedroom lamp is offline: no response within 2 s".'
+          items: { $ref: "#/components/schemas/TraceStep" }
+        actionsExecuted: { type: integer, minimum: 0 }

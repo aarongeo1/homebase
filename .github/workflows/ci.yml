@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux:
+    name: verify (linux)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: backend/global.json
+      - run: npm ci
+      # --strict: a gate skipped for a missing tool fails the build.
+      - run: npm run verify -- --strict
+      - run: npm run build
+
+  macos:
+    # Homebase runs on a Mac: TLS client certificates (Android TV) and UDP sockets (Govee) behave per OS.
+    name: backend (macos)
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: backend/global.json
+      - run: dotnet build backend/Homebase.sln -c Release
+      - run: dotnet test backend/Homebase.sln -c Release --no-build

@@ -1,0 +1,38 @@
+# Weekly "is our AI setup still current?" check. Fails when the approved model list is older
+# than 90 days or any AI config uses a retired field — see docs/ai/STAYING-CURRENT.md.
+name: AI config health
+
+on:
+  schedule:
+    - cron: "0 8 * * 1" # Mondays 08:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: backend/global.json
+      - run: npm ci
+      - name: Lint AI context (strict)
+        run: npm run lint:ai -- --strict
+      - name: Dependency drift report
+        if: always()
+        run: |
+          {
+            echo "## Outdated npm packages"; echo '```'; npm outdated --all || true; echo '```'
+            echo "## Outdated / vulnerable NuGet packages"; echo '```'
+            dotnet list backend/Homebase.sln package --outdated || true
+            dotnet list backend/Homebase.sln package --vulnerable --include-transitive || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

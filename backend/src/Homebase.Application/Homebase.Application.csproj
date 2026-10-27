@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Homebase.Application</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Homebase.Domain\Homebase.Domain.csproj" />
+    <ProjectReference Include="..\Homebase.Devices\Homebase.Devices.csproj" />
+  </ItemGroup>
+</Project>

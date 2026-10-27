@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Homebase.Data</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Dapper" />
+    <PackageReference Include="Microsoft.Data.Sqlite" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- database/migrations is the single home for schema scripts; they are embedded, never copied. -->
+    <EmbeddedResource Include="..\..\..\database\migrations\*.sql" LogicalName="migrations.%(Filename)%(Extension)" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Homebase.Domain\Homebase.Domain.csproj" />
+  </ItemGroup>
+</Project>

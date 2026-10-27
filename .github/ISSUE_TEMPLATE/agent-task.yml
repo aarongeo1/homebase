@@ -1,0 +1,52 @@
+name: Copilot task
+description: A small, specific, verifiable task that Copilot can pick up without asking questions.
+title: "[task] "
+labels: ["copilot-ready"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Write this like a ticket for a capable new contributor who **cannot ask you questions**.
+        Well-scoped tasks cost fewer credits, take fewer review rounds and produce fewer wrong PRs.
+        Too big for one PR? Split it.         Report-token and hardware-driver changes: Copilot assists, a human leads.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options: [Devices, Automations, Presence, Contract / API, Database, Platform / AI config]
+    validations: { required: true }
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What should be true when this is done, and for whom?
+      placeholder: I can pause all automations for 2 hours from the Automations page (e.g. when friends are over).
+    validations: { required: true }
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Testable bullets — each becomes a test. Include at least one unhappy path.
+      placeholder: |
+        - [ ] "Pause 2h" button on /automations; while paused no automation runs (run outcome `skipped`, trace says why)
+        - [ ] Pause ends automatically after 2h
+        - [ ] A countdown that is waiting when the pause starts is cancelled, and its run says why
+    validations: { required: true }
+  - type: textarea
+    id: pointers
+    attributes:
+      label: Where to start
+      description: Files, endpoints or ADRs (see docs/CODEMAP.md). Saves the agent from searching — and you from paying for it.
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: Out of scope
+  - type: dropdown
+    id: risk
+    attributes:
+      label: Risk
+      options:
+        - Low — UI, copy, tests
+        - Medium — behaviour change in one area
+        - High — report token, hardware drivers, contract or schema (human-led)
+    validations: { required: true }

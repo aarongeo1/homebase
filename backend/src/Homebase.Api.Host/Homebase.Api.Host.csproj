@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <RootNamespace>Homebase.Api.Host</RootNamespace>
+    <AssemblyName>Homebase</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Homebase.Api\Homebase.Api.csproj" />
+    <ProjectReference Include="..\Homebase.Data\Homebase.Data.csproj" />
+  </ItemGroup>
+</Project>

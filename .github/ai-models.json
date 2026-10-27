@@ -1,0 +1,15 @@
+{
+  "$comment": "Approved Copilot models by cost tier. The ONE place to update when GitHub adds or retires models; `npm run lint:ai` rejects any agent/prompt model not listed here and warns when lastVerified is older than 90 days. Since June 2026 Copilot bills usage-based (tokens × model rate), so tier choice is a direct cost lever.",
+  "source": "https://docs.github.com/en/copilot/reference/ai-models/supported-models",
+  "lastVerified": "2026-10-26",
+  "tiers": {
+    "economy": ["GPT-5.4 nano (copilot)"],
+    "standard": ["GPT-5.4 nano (copilot)"],
+    "premium": ["GPT-5.4 nano (copilot)"]
+  },
+  "usage": {
+    "economy": "Explaining code, writing tests for existing code, docs, mechanical edits.",
+    "standard": "Implementing a reviewed plan, reviewing diffs, most bug fixes.",
+    "premium": "Planning cross-area changes, hard debugging, security-sensitive design. Short, high-leverage turns only."
+  }
+}

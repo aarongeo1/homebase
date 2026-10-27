@@ -1,0 +1,20 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule: { interval: weekly }
+    open-pull-requests-limit: 5
+    groups:
+      frontend-tooling:
+        dependency-type: development
+    ignore:
+      # ADR-0003: typescript-eslint and openapi-typescript do not support TypeScript 6+ yet.
+      - dependency-name: typescript
+        versions: [">=6.0.0"]
+  - package-ecosystem: nuget
+    directory: /backend
+    schedule: { interval: weekly }
+    open-pull-requests-limit: 5
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly }

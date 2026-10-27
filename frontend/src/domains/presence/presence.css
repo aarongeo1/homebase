@@ -1,0 +1,8 @@
+.presence__hint { margin: 12px 0 0; font-size: 14px; }
+.presence__error { color: var(--danger); margin: 0; font-size: 14px; }
+.pairing__form { align-items: flex-end; }
+.pairing__form .field { flex: 1 1 220px; }
+.setup { display: grid; grid-template-columns: 80px 1fr; gap: 10px 16px; margin: 0; }
+.setup dt { font-weight: 700; }
+.setup dd { margin: 0; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.setup code, .presence-code { overflow-wrap: anywhere; font-size: 13px; }

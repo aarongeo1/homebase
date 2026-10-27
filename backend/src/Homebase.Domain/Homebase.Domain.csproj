@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Every rule lives here. No package or project references, so it is testable anywhere. -->
+  <PropertyGroup>
+    <RootNamespace>Homebase.Domain</RootNamespace>
+  </PropertyGroup>
+</Project>

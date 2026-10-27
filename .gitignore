@@ -1,21 +1,19 @@
-# .NET build output
-**/bin/
-**/obj/
-
-# JavaScript dependencies and build output
 node_modules/
-**/node_modules/
 dist/
-**/dist/
-build/
-**/build/
 coverage/
-**/coverage/
+*.log
+.DS_Store
+.env
+.env.*
+!.env.example
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/mcp.json
 
-# IDE and test artifacts
+# .NET
+bin/
+obj/
 .vs/
-.idea/
+*.user
 TestResults/
-**/TestResults/
-artifacts/
-**/artifacts/
