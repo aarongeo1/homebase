@@ -1,0 +1,21 @@
+# .NET build output
+**/bin/
+**/obj/
+
+# JavaScript dependencies and build output
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+build/
+**/build/
+coverage/
+**/coverage/
+
+# IDE and test artifacts
+.vs/
+.idea/
+TestResults/
+**/TestResults/
+artifacts/
+**/artifacts/
